@@ -1,14 +1,19 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using QuestPatcher.Core.Downgrading;
 using QuestPatcher.Core.Modding;
 using QuestPatcher.Core.Models;
 using QuestPatcher.Core.Patching;
 using QuestPatcher.Core.Utils;
 using Serilog;
 using Serilog.Core;
+using Version = SemanticVersioning.Version;
 
 namespace QuestPatcher.Core
 {
@@ -29,6 +34,8 @@ namespace QuestPatcher.Core
         protected IUserPrompter Prompter { get; }
 
         protected InfoDumper InfoDumper { get; }
+        
+        protected DowngradeManger DowngradeManger { get; }
 
         //TODO Sky: avoid making it public
         public Config Config => _configManager.GetOrLoadConfig();
@@ -48,8 +55,6 @@ namespace QuestPatcher.Core
             Log.Logger = SetupLogging();
 
             Prompter = prompter;
-            //TODO Sky: move to better location, move checking logic elsewhere and prompt update in prompter
-            Prompter.CheckUpdate();
             _configManager = new ConfigManager(SpecialFolders);
             _configManager.GetOrLoadConfig(); // Load the config file
             FilesDownloader = new ExternalFilesDownloader(SpecialFolders);
@@ -60,6 +65,7 @@ namespace QuestPatcher.Core
             ModManager.RegisterModProvider(new QModProvider(ModManager, Config, DebugBridge, FilesDownloader));
             PatchingManager = new PatchingManager(Config, DebugBridge, SpecialFolders, FilesDownloader, Prompter, ModManager, InstallManager);
             InfoDumper = new InfoDumper(SpecialFolders, DebugBridge, ModManager, _configManager, InstallManager);
+            DowngradeManger = new DowngradeManger(Config, InstallManager, FilesDownloader, DebugBridge, SpecialFolders);
 
             Log.Debug("QuestPatcherService constructed (QuestPatcher version {QuestPatcherVersion})", VersionUtil.QuestPatcherVersion);
         }
@@ -128,7 +134,7 @@ namespace QuestPatcher.Core
             
             CoreModUtils.Instance.PackageId = Config.AppId;
             await InstallManager.LoadInstalledApp();
-            await Task.WhenAll(CoreModUtils.Instance.RefreshCoreMods(), DownloadMirrorUtil.Instance.Refresh());
+            await Task.WhenAll(CoreModUtils.Instance.RefreshCoreMods(), DownloadMirrorUtil.Instance.Refresh(), DowngradeManger.LoadAvailableDowngrades());
             if (InstallManager.InstalledApp!.ModLoader == ModLoader.Scotland2)
             {
                 await PatchingManager.SaveScotland2(false); // Make sure that Scotland2 is saved to the right location
@@ -203,6 +209,31 @@ namespace QuestPatcher.Core
             {
                 // Force a reupload of sl2
                 await PatchingManager.SaveScotland2(true);
+            }
+        }
+        
+        public async Task CheckForUpdates()
+        {
+            try
+            {
+                Log.Debug("Checking for QuestPatcher updates");
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.UserAgent.Add(ProductInfoHeaderValue.Parse($"QuestPatcher/{VersionUtil.QuestPatcherVersion.BaseVersion()}"));
+                client.DefaultRequestHeaders.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
+                
+                var res = JsonNode.Parse(await client.GetStringAsync(@"https://api.github.com/repos/MicroCBer/QuestPatcher/releases/latest"));
+                
+                string tagName = res?["tag_name"]?.ToString() ?? throw new Exception("Failed to check update, tag name is null");
+
+                // old versions of QP CN were not SemVer valid
+                bool isLatest = Version.TryParse(tagName, out var latest) && latest <= VersionUtil.QuestPatcherVersion;
+
+                if (!isLatest) await Prompter.PromptUpdateAvailable(latest?.BaseVersion().ToString() ?? tagName);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Failed to check for updates: {Message}", e.Message);
+                await Prompter.PromptUpdateCheckFailed(e);
             }
         }
     }

@@ -40,9 +40,7 @@ SOFTWARE.
         <Setter Property="Template">
             <ControlTemplate>
                 <DockPanel Margin="0 40 0 0">
-                    <!--I am aware that this should be setting the margin based on the template binding,
-                    but that also adds additional padding on the right where I don't want it.
-                    Setting it manually here gets around that, and allows space for the "Welcome to QuestPatcher" text-->
+                    <!--I am aware that this should be setting the margin based on the template binding, but that also adds additional padding on the right where I don't want it. Setting it manually here gets around that, and allows space for the "Welcome to QuestPatcher" text-->
                     <ScrollViewer Width="240" Margin="0 40 0 0"
             Name="PART_ScrollViewer" 
             HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"

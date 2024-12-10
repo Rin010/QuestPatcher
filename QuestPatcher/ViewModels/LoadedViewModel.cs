@@ -5,45 +5,18 @@ using System.Linq;
 using Avalonia.Input;
 using QuestPatcher.Core;
 using QuestPatcher.Core.Models;
-using QuestPatcher.Utils;
+using QuestPatcher.Resources;
+using QuestPatcher.ViewModels.ModBrowser;
 using QuestPatcher.ViewModels.Modding;
 using ReactiveUI;
 using Serilog;
 
-#pragma warning disable CA1822
 namespace QuestPatcher.ViewModels
 {
     public class LoadedViewModel : ViewModelBase
     {
-        public void ShowTutorial()
-        {
-            Util.OpenWebpage("https://bs.wgzeyu.com/oq-guide-qp/");
-        }
-        public void OpenSourceAddr()
-        {
-            Util.OpenWebpage("https://github.com/MicroCBer/QuestPatcher");
-        }
-        public void OpenSourceFKAddr()
-        {
-            Util.OpenWebpage("https://github.com/Lauriethefish/QuestPatcher");
-        }
-        public void WGZEYUAddr()
-        {
-            Util.OpenWebpage("https://space.bilibili.com/557131");
-        }
-        
-        public void MBAddr()
-        {
-            Util.OpenWebpage("https://space.bilibili.com/413164365");
-        }
+        public string SelectedAppText => "Modified by MicroBlock & SkyQe";
 
-        public void SkyQeAddr()
-        {
-            Util.OpenWebpage("https://space.bilibili.com/3744764");
-        }
-        
-        public string SelectedAppText => $"Modified by MicroBlock";
-        
         public PatchingViewModel PatchingView { get; }
 
         public ManageModsViewModel ManageModsView { get; }
@@ -53,6 +26,10 @@ namespace QuestPatcher.ViewModels
         public ToolsViewModel ToolsView { get; }
 
         public OtherItemsViewModel OtherItemsView { get; }
+        
+        public AboutViewModel AboutView { get; }
+                
+        public BrowseModViewModel BrowseModView { get; }
 
         private string AppName
         {
@@ -64,7 +41,7 @@ namespace QuestPatcher.ViewModels
             }
         }
 
-        public string WelcomeText => $"{AppName} 2";
+        public string WelcomeText => string.Format(Strings.Global_WelcomeMessage, AppName);
 
         public string Version => VersionUtil.QuestPatcherVersion.ToString();
 
@@ -83,13 +60,15 @@ namespace QuestPatcher.ViewModels
         private readonly InstallManager _installManager;
         private readonly BrowseImportManager _browseManager;
 
-        public LoadedViewModel(PatchingViewModel patchingView, ManageModsViewModel manageModsView, LoggingViewModel loggingView, ToolsViewModel toolsView, OtherItemsViewModel otherItemsView, Config config, InstallManager installManager, BrowseImportManager browseManager)
+        public LoadedViewModel(PatchingViewModel patchingView, ManageModsViewModel manageModsView, LoggingViewModel loggingView, ToolsViewModel toolsView, OtherItemsViewModel otherItemsView, AboutViewModel aboutView, Config config, InstallManager installManager, BrowseImportManager browseManager, BrowseModViewModel browseModView)
         {
             PatchingView = patchingView;
             LoggingView = loggingView;
             ToolsView = toolsView;
             ManageModsView = manageModsView;
             OtherItemsView = otherItemsView;
+            AboutView = aboutView;
+            BrowseModView = browseModView;
 
             Config = config;
             _installManager = installManager;

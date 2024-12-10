@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -535,7 +536,7 @@ namespace QuestPatcher.Core
         public async Task InstallApp(string apkPath)
         {
             string pushPath = $"/data/local/tmp/{Guid.NewGuid()}.apk";
-            
+
             await RunCommand($"push {apkPath.EscapeProc()} {pushPath}");
             await RunShellCommand($"pm install {pushPath}");
             await RunShellCommand($"rm {pushPath}");
@@ -639,19 +640,8 @@ namespace QuestPatcher.Core
             {
                 commands.Add($"rm -f {path.WithForwardSlashes().EscapeBash()}");
             }
-            try
-            {
-                await RunShellCommands(commands);
-            }
-            catch (Exception ex)
-            {
-                //TODO Sky: is this still needed?
-                if(ex.ToString().Contains("BeatTogether.cfg"))
-                {
-                    Log.Warning("[ MFix ] Threw error about BeatTogether.cfg.Handled.");
-                }
-                else throw ex;
-            }
+
+            await RunShellCommands(commands);
         }
 
         public async Task ExtractArchive(string path, string outputFolder)

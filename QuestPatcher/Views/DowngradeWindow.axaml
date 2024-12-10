@@ -1,0 +1,44 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
+        xmlns:res="clr-namespace:QuestPatcher.Resources"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="225"
+        MinWidth="300" Width="400" SizeToContent="Height"
+        x:Class="QuestPatcher.Views.DowngradeWindow"
+        Icon="/Assets/questpatcher-logo.ico"
+        Title="降级应用"
+        Background="{x:Null}"
+        ExtendClientAreaToDecorationsHint="true"
+        ExtendClientAreaTitleBarHeightHint="-1"
+        RequestedThemeVariant="{DynamicResource ThemeVariant}">
+  
+  <Design.DataContext>
+    <viewModels:DowngradeViewModel />
+  </Design.DataContext>
+  
+  <DockPanel HorizontalAlignment="Stretch">
+    <ExperimentalAcrylicBorder DockPanel.Dock="Bottom" Material="{DynamicResource MainBackgroundMaterial}">
+      <DockPanel Margin="0 20 0 0">
+        <TextBlock DockPanel.Dock="Top" Padding="8" HorizontalAlignment="Center" TextDecorations="Underline" Text="降级应用"/>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Spacing="15" Margin="10 0 10 10">
+          <ProgressBar Width="100" IsIndeterminate="True" IsVisible="{Binding IsLoading}"/>
+          <!-- <Button Content="刷新版本" Command="{Binding LoadVersions}" HorizontalAlignment="Center"/> -->
+          <TextBlock TextAlignment="Center" FontSize="14" TextWrapping="Wrap" Text="选择目标版本"/>
+          <ComboBox SelectedItem="{Binding SelectedToVersion}"
+                    ItemsSource="{Binding AvailableToVersions}"
+                    IsEnabled="{Binding !IsLoading}"
+                    HorizontalAlignment="Center" MinWidth="160">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding .}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Content="一键降级" Command="{Binding Downgrade}" HorizontalAlignment="Center" IsEnabled="{Binding !IsLoading}"/>
+        </StackPanel>
+      </DockPanel>
+    </ExperimentalAcrylicBorder>
+  </DockPanel>
+</Window>

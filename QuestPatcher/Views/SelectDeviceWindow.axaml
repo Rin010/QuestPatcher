@@ -2,11 +2,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:res="clr-namespace:QuestPatcher.Resources"
         xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="220" SizeToContent="Height" MinWidth="450" Width="450"
         x:Class="QuestPatcher.Views.SelectDeviceWindow"
         Icon="/Assets/questpatcher-logo.ico"
-        Title="更换设备"
+        Title="{x:Static res:Strings.SelectDevice_WindowTitle}"
         Background="{x:Null}"
         ExtendClientAreaToDecorationsHint="true"
         ExtendClientAreaTitleBarHeightHint="-1"
@@ -20,8 +21,8 @@
     <ExperimentalAcrylicBorder DockPanel.Dock="Left" Padding="10" IsHitTestVisible="True" Material="{DynamicResource MainBackgroundMaterial}">
 
       <StackPanel Spacing="10" HorizontalAlignment="Center">
-        <TextBlock HorizontalAlignment="Center" TextDecorations="Underline">选择设备</TextBlock>
-        <TextBlock TextAlignment="Center" TextWrapping="Wrap">检测到多个连接的安卓设备，请在下方选择您想使用的设备</TextBlock>
+        <TextBlock HorizontalAlignment="Center" TextDecorations="Underline" Text="{x:Static res:Strings.SelectDevice_Title}"/>
+        <TextBlock TextAlignment="Center" TextWrapping="Wrap" Text="{x:Static res:Strings.SelectDevice_Message}"/>
 
         <DataGrid Margin="20" ItemsSource="{Binding Devices}"
                     IsReadOnly="True"
@@ -33,7 +34,7 @@
             <DataGridTextColumn Header="Id" Binding="{Binding Id}" Width="*" />
           </DataGrid.Columns>
         </DataGrid>        
-        <Button Command="{Binding OnSelectDevice}" HorizontalAlignment="Center" HorizontalContentAlignment="Center">确定</Button>
+        <Button Command="{Binding OnSelectDevice}" HorizontalAlignment="Center" HorizontalContentAlignment="Center" Content="{x:Static res:Strings.Generic_Select}"/>
       </StackPanel>
     </ExperimentalAcrylicBorder>
   </DockPanel>

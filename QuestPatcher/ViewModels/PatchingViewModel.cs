@@ -3,9 +3,12 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using QuestPatcher.Core;
+using QuestPatcher.Core.Downgrading;
 using QuestPatcher.Core.Models;
 using QuestPatcher.Core.Patching;
+using QuestPatcher.Core.Utils;
 using QuestPatcher.Models;
+using QuestPatcher.Resources;
 using ReactiveUI;
 using Serilog;
 
@@ -54,6 +57,71 @@ namespace QuestPatcher.ViewModels
 
         public async void StartPatching()
         {
+            var apk = _installManager.InstalledApp;
+            if (apk == null)
+            {
+                Log.Warning("Trying to patch game without an installed app");
+                return;
+            }
+
+            var apkSemVer = apk.SemVersion;
+            // TODO load core mod if not loaded
+            if (CoreModUtils.Instance.IsCoreModsLoaded)
+            {
+                var coreMods = CoreModUtils.Instance.GetCoreMods(apk.Version);
+                if (coreMods.Count == 0)
+                {
+                    Log.Warning("Trying to patch game without available core mods!");
+                    var builder = new DialogBuilder
+                    {
+                        Title = "没有核心MOD",
+                        Text = $"当前游戏版本 {apkSemVer?.BaseVersion().ToString() ?? apk.Version} 暂时还没有可用的核心MOD\n确定要继续打补丁吗？"
+                    };
+
+                    if (DowngradeManger.DowngradeFeatureAvailable(_installManager.InstalledApp, Config.AppId))
+                    {
+                        builder.Text += "\n\n您可以通过工具页面的“一键降级”按钮来自动降级游戏, 无需APK文件！";
+                    }
+                    
+                    builder.OkButton.Text = Strings.Generic_ContinueAnyway;
+                    if (!await builder.OpenDialogue(_mainWindow))
+                    {
+                        Log.Debug("Patching not started due to no core mods");
+                        return;
+                    }
+                }
+            }
+
+            if (apkSemVer != null)
+            {
+                // check version and selected mod loader
+                var modLoader = Config.PatchingOptions.ModLoader;
+                string? text = null;
+                if (modLoader == ModLoader.QuestLoader && apkSemVer > SharedConstants.BeatSaberLastQuestLoaderVersion)
+                {
+                    text = $"当前游戏版本 {apkSemVer.BaseVersion()} 的Mod需要 Scotland2 Mod注入器，而您选择了 QuestLoader。\n这会导致Mod无法加载并且需要重新打补丁。";
+                }
+                else if (modLoader == ModLoader.Scotland2 && apkSemVer <= SharedConstants.BeatSaberLastQuestLoaderVersion)
+                {
+                    text = $"当前游戏版本 {apkSemVer.BaseVersion()} 的Mod需要 QuestLoader Mod注入器，而您选择了 Scotland2。\n这会导致Mod无法加载并且需要重新打补丁。";
+                }
+
+                if (text != null)
+                {
+                    var builder = new DialogBuilder
+                    {
+                        Title = "不匹配的Mod注入器",
+                        Text = text
+                    };
+                
+                    builder.OkButton.Text = Strings.Generic_ContinueAnyway;
+                    if (!await builder.OpenDialogue(_mainWindow))
+                    {
+                        return;
+                    }
+                }
+            }
+            
             if (Config.PatchingOptions.FlatScreenSupport)
             {
                 // Disable VR requirement apparently causes infinite load
@@ -63,7 +131,7 @@ namespace QuestPatcher.ViewModels
                     Text = "您在补丁选项中禁用了VR要求，这可能会导致出现错误，例如启动游戏时无限加载"
                 };
                 
-                builder.OkButton.Text = "仍然继续";
+                builder.OkButton.Text = Strings.Generic_ContinueAnyway;
                 if (!await builder.OpenDialogue(_mainWindow))
                 {
                     return;
@@ -80,10 +148,10 @@ namespace QuestPatcher.ViewModels
             {
                 Log.Error("Patching failed as essential files could not be downloaded: {Message}", ex.Message);
 
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "Could not download files",
-                    Text = "QuestPatcher could not download files that it needs to patch the APK. Please check your internet connection, then try again.",
+                    Title = Strings.Patching_FileDownloadFailed_Title,
+                    Text = Strings.Patching_FileDownloadFailed_Text,
                     HideCancelButton = true
                 };
 
@@ -92,11 +160,11 @@ namespace QuestPatcher.ViewModels
             catch (Exception ex)
             {
                 // Print troubleshooting information for debugging
-                Log.Error(ex, $"Patching failed!");
-                DialogBuilder builder = new()
+                Log.Error(ex, "Patching failed!");
+                var builder = new DialogBuilder
                 {
-                    Title = "完蛋!出错了",
-                    Text = "在给游戏打补丁的过程中出现了一个意料外的错误。",
+                    Title = Strings.Patching_PatchingFailed_Title,
+                    Text = Strings.Patching_PatchingFailed_Text,
                     HideCancelButton = true
                 };
                 builder.WithException(ex);
@@ -113,11 +181,10 @@ namespace QuestPatcher.ViewModels
             {
                 // Display a dialogue to give the user some info about what to expect next, and to avoid them pressing restore app by mistake
                 Log.Debug("Patching completed successfully, displaying info dialogue");
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "完工!",
-                    Text = "你的游戏现在已经打完补丁啦\n现在你可以安装Mod了！" +
-                    "\n\n提示：如果你在头显里面看到了一个“恢复的应用”窗口，不必惊慌，只用点击取消即可。Oculus不会因为打Mod封号，所以没啥好担心的。",
+                    Title = Strings.Patching_PatchingSuccess_Title,
+                    Text = Strings.Patching_PatchingSuccess_Text,
                     HideCancelButton = true
                 };
                 await builder.OpenDialogue(_mainWindow);
@@ -152,13 +219,13 @@ namespace QuestPatcher.ViewModels
         {
             PatchingStageText = stage switch
             {
-                PatchingStage.NotStarted => "未开始",
-                PatchingStage.FetchingFiles => "下载打补丁所需的文件 (1/6)",
-                PatchingStage.MovingToTemp => "将APK移动至指定位置 (2/6)",
-                PatchingStage.Patching => "更改APK文件来使其支持安装mod (3/6)",
-                PatchingStage.Signing => "给APK签名 (4/6)",
-                PatchingStage.UninstallingOriginal => "卸载原有的APK (5/6)",
-                PatchingStage.InstallingModded => "安装改过的APK (6/6)",
+                PatchingStage.NotStarted => Strings.PatchingStage_NotStarted,
+                PatchingStage.FetchingFiles => Strings.PatchingStage_FetchFiles,
+                PatchingStage.MovingToTemp => Strings.PatchingStage_MoveToTemp,
+                PatchingStage.Patching => Strings.PatchingStage_Patching,
+                PatchingStage.Signing => Strings.PatchingStage_Signing,
+                PatchingStage.UninstallingOriginal => Strings.PatchingStage_UninstallOriginal,
+                PatchingStage.InstallingModded => Strings.PatchingStage_InstallModded,
                 _ => throw new NotImplementedException()
             };
             this.RaisePropertyChanged(nameof(PatchingStageText));

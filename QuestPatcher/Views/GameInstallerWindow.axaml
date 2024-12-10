@@ -1,0 +1,58 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
+        xmlns:res="clr-namespace:QuestPatcher.Resources"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        MinWidth="440" MinHeight="224" SizeToContent="WidthAndHeight"
+        x:Class="QuestPatcher.Views.GameInstallerWindow"
+        Icon="/Assets/questpatcher-logo.ico"
+        Title="安装游戏"
+        Background="{x:Null}"
+        ExtendClientAreaToDecorationsHint="true"
+        ExtendClientAreaTitleBarHeightHint="-1"
+        RequestedThemeVariant="{DynamicResource ThemeVariant}">
+  
+  <Design.DataContext>
+    <viewModels:GameInstallerViewModel />
+  </Design.DataContext>
+  
+  <DockPanel>
+    <ExperimentalAcrylicBorder DockPanel.Dock="Bottom" Material="{DynamicResource MainBackgroundMaterial}">
+      <DockPanel Margin="0 20 0 0"  HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock DockPanel.Dock="Top" Padding="8" HorizontalAlignment="Center" TextDecorations="Underline" Text="安装游戏"/>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Vertical" Spacing="16" Margin="16 8 16 16" >
+          <ProgressBar Width="100" IsIndeterminate="True" IsVisible="{Binding IsLoading}"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+            <TextBlock TextAlignment="Center" FontSize="14" Text="APK文件:" VerticalAlignment="Center"/>
+            <TextBox Width="240" Margin="16 0 16 0" VerticalAlignment="Center" TextAlignment="Left" IsReadOnly="True" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Text="{Binding ApkPath}"/>
+            <Button Content="浏览APK" VerticalAlignment="Center" Command="{Binding SelectApk}" IsEnabled="{Binding !IsLoading}"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center" FontSize="14" Text="Obb文件(可选):"/>
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center" FontSize="14" Margin="8 0 16 0">
+              <Run Text="{Binding ObbPaths.Count, Mode=TwoWay, StringFormat=已选择 {0} 个}"/>
+                <ToolTip.Tip>
+                  <StackPanel>
+                    <TextBlock Text="已选择的Obb文件:"/>
+                    <TextBlock Text="无" IsVisible="{Binding !ObbSelected}"/>
+                    <ItemsControl IsVisible="{Binding ObbSelected}" ItemsSource="{Binding ObbPaths}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding}"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </ToolTip.Tip>
+            </TextBlock>
+            <Button Content="选择Obb" VerticalAlignment="Center" Command="{Binding SelectObb}" IsEnabled="{Binding !IsLoading}"/>
+          </StackPanel>
+          <TextBlock Text="提示：1.34.2以上版本的游戏需要Obb文件才能正常运行"/>
+          <Button Content="安装" Command="{Binding InstallGame}" HorizontalAlignment="Center" IsEnabled="{Binding !IsLoading}"/>
+        </StackPanel>
+      </DockPanel>
+    </ExperimentalAcrylicBorder>
+  </DockPanel>
+</Window>

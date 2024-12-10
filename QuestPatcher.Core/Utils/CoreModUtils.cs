@@ -14,15 +14,15 @@ public class CoreModUtils
 {
     public static readonly CoreModUtils Instance = new();
     
-    public const string BeatSaberPackageID = @"com.beatgames.beatsaber";
-    
-    private const string BeatSaberCoreModsUrl = @"https://github.com/qe201020335/BMBFResourceMirror/raw/master/com.beatgames.beatsaber/core-mods.json";
+    private const string BeatSaberCoreModsUrl = @"https://raw.githubusercontent.com/QuestPackageManager/bs-coremods/main/core_mods.json";
     private const string BeatSaberCoreModsCnUrl = @"https://beatmods.wgzeyu.com/github/BMBFresources/com.beatgames.beatsaber/core-mods.json";
     private readonly HttpClient _client = new();
     private CoreModUtils()
     {
         
     }
+    
+    public bool IsCoreModsLoaded => _coreModsMap != null;
 
     public string PackageId
     {
@@ -41,15 +41,16 @@ public class CoreModUtils
     }
 
     private Dictionary<string, IList<CoreMod>>? _coreModsMap;  // game version: core mods
-    private string _coreModPackageId = BeatSaberPackageID;
+    private string _coreModPackageId = SharedConstants.BeatSaberPackageID;
 
     private CancellationTokenSource? _cancellationTokenSource;
     
+    //TODO indicate loading success/failure
     public async Task RefreshCoreMods()
     {
         Log.Information("Refreshing Core Mods");
 
-        if (PackageId != BeatSaberPackageID)
+        if (PackageId != SharedConstants.BeatSaberPackageID)
         {
             Log.Warning("There are no core mods known for this game");
             // currently there are only core mods organized for Beat Saber.
@@ -63,7 +64,8 @@ public class CoreModUtils
         _cancellationTokenSource = new CancellationTokenSource();
         var token = _cancellationTokenSource.Token;
 
-        if (!await LoadCoreMods(BeatSaberCoreModsUrl, token) && !await LoadCoreMods(BeatSaberCoreModsCnUrl, token))
+        // if (!await LoadCoreMods(BeatSaberCoreModsUrl, token) && !await LoadCoreMods(BeatSaberCoreModsCnUrl, token))
+        if (!await LoadCoreMods(BeatSaberCoreModsUrl, token))  // disable cn core mods url
         {
             Log.Error("Cannot fetch core mods from any source");
         }
@@ -135,7 +137,7 @@ public class CoreModUtils
         
         public override string ToString()
         {
-            return $"{Id} {Version}";
+            return $"{Id}@{Version}";
         }
     }
 }

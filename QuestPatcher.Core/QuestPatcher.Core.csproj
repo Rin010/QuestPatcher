@@ -21,7 +21,8 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="QuestPatcher.QMod" Version="2.1.1" />
+    <PackageReference Include="BsDiff" Version="1.1.0" />
+    <PackageReference Include="QuestPatcher.QMod" Version="2.2.1" />
     <PackageReference Include="SemanticVersioning" Version="2.0.2" />
     <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
@@ -29,6 +30,7 @@
     <PackageReference Include="Serilog.Sinks.TextWriter" Version="2.0.0" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
     <PackageReference Include="AssetsTools.NET" Version="2.0.12" />
+    <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

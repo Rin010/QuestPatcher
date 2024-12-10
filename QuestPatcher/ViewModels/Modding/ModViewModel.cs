@@ -6,6 +6,7 @@ using Avalonia.Media.Imaging;
 using QuestPatcher.Core;
 using QuestPatcher.Core.Modding;
 using QuestPatcher.Models;
+using QuestPatcher.Resources;
 using ReactiveUI;
 
 namespace QuestPatcher.ViewModels.Modding
@@ -17,7 +18,7 @@ namespace QuestPatcher.ViewModels.Modding
     public class ModViewModel : ViewModelBase
     {
         public string Name => Mod.Name;
-        public string Author => Mod.Porter == null ? $"(By {Mod.Author})" : $"(By {Mod.Author} - ported by {Mod.Porter})";
+        public string Author => Mod.Porter == null ? string.Format(Strings.Mod_Author, Mod.Author) : string.Format(Strings.Mod_AuthorWithPorter, Mod.Author, Mod.Porter);
 
         public string Version => $"v{Mod.Version}";
 
@@ -120,10 +121,10 @@ namespace QuestPatcher.ViewModels.Modding
             // Check that the modloader matches what we have installed
             if (Mod.ModLoader != _installManager.InstalledApp.ModLoader)
             {
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "Mod注入器不匹配",
-                    Text = $"您正在安装的Mod需要 {Mod.ModLoader} 注入器，但您的游戏是使用 {_installManager.InstalledApp.ModLoader} 打的补丁。",
+                    Title = Strings.Mod_WrongModLoader_Title,
+                    Text = String.Format(Strings.Mod_WrongModLoader_Text, Mod.ModLoader, _installManager.InstalledApp.ModLoader),
                     HideCancelButton = true
                 };
 
@@ -134,12 +135,12 @@ namespace QuestPatcher.ViewModels.Modding
             // Check game version, and prompt if it is incorrect to avoid users installing mods that may crash their game
             if (Mod.PackageVersion != null && Mod.PackageVersion != _installManager.InstalledApp.Version)
             {
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "版本不匹配的Mod",
-                    Text = $"该Mod是为{Mod.PackageVersion}版本的游戏开发的，然而你当前安装的游戏版本是{_installManager.InstalledApp.Version}。启用这个Mod有可能会导致游戏崩溃，也有可能正常运行。"
+                    Title = Strings.Mod_OutdatedMod_Title,
+                    Text = string.Format(Strings.Mod_OutdatedMod_Text, Mod.PackageVersion, _installManager.InstalledApp.Version)
                 };
-                builder.OkButton.Text = "仍然继续";
+                builder.OkButton.Text = Strings.Generic_ContinueAnyway;
 
                 if (!await builder.OpenDialogue(_mainWindow))
                 {
@@ -153,7 +154,7 @@ namespace QuestPatcher.ViewModels.Modding
             }
             catch (Exception ex)
             {
-                await ShowFailDialog("Failed to install mod", ex);
+                await ShowFailDialog(Strings.Mod_InstallFailed, ex);
             }
         }
 
@@ -211,7 +212,7 @@ namespace QuestPatcher.ViewModels.Modding
             }
             catch (Exception ex)
             {
-                await ShowFailDialog("Failed to uninstall mod", ex);
+                await ShowFailDialog(Strings.Mod_UninstallFailed, ex);
                 return false;
             }
         }
@@ -236,7 +237,7 @@ namespace QuestPatcher.ViewModels.Modding
             }
             catch (Exception ex)
             {
-                await ShowFailDialog("Failed to delete mod", ex);
+                await ShowFailDialog(Strings.Mod_DeleteFailed, ex);
             }
             finally
             {
@@ -253,7 +254,7 @@ namespace QuestPatcher.ViewModels.Modding
         /// <param name="ex">Exception to display</param>
         private async Task ShowFailDialog(string title, Exception ex)
         {
-            DialogBuilder builder = new()
+            var builder = new DialogBuilder
             {
                 Title = title,
                 Text = ex.Message,

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using QuestPatcher.Axml;
 using QuestPatcher.Core.Models;
 using QuestPatcher.Core.Patching;
+using QuestPatcher.Core.Utils;
 using QuestPatcher.Zip;
 using Serilog;
 
@@ -167,7 +168,15 @@ namespace QuestPatcher.Core
             }
             Log.Information("APK is " + (is64Bit ? "64" : "32") + " bit");
 
-            InstalledApp = new ApkInfo(version, modloader, is64Bit, _currentlyInstalledPath);
+            var app = new ApkInfo(version, modloader, is64Bit, _currentlyInstalledPath);
+            if (!app.IsModded && app.SemVersion != null)
+            {
+                // Change the mod loader in patching options to the correct one for the version of beat saber
+                _config.PatchingOptions.ModLoader = app.SemVersion > SharedConstants.BeatSaberLastQuestLoaderVersion
+                    ? ModLoader.Scotland2
+                    : ModLoader.QuestLoader;
+            }
+            InstalledApp = app;
         }
 
         /// <summary>
@@ -272,13 +281,50 @@ namespace QuestPatcher.Core
             // Move the obb backup to the original path.
             await _debugBridge.Move(backupPath, ObbPath);
         }
+        
+        public async Task<string?> DownloadObbFile(string obbName, string destinationFolder)
+        {
+            string obbPath = Path.Combine(ObbPath, obbName);
+            if (!await _debugBridge.Exists(obbPath))
+            {
+                return null;
+            }
+            
+            string destinationPath = Path.Combine(destinationFolder, obbName);
+            await _debugBridge.DownloadFile(obbPath, destinationPath);
+            return destinationPath;
+        }
+        
+        public async Task ReplaceObbFile(string oldObbName, string newObbName, string sourcePath)
+        {
+            string oldPath = Path.Combine(ObbPath, oldObbName);
+            if (await _debugBridge.Exists(oldPath))
+            {
+                await _debugBridge.DeleteFile(oldPath);
+            }
+            
+            string newPath = Path.Combine(ObbPath, newObbName);
+            await _debugBridge.UploadFile(sourcePath, newPath);
+        }
                 
         /// <summary>
         /// Uninstalls the current app if installed and then install a new app
         /// </summary>
         /// <param name="path">The path to the apk to install</param>
-        public async Task ReplaceApp(string path)
+        public async Task ReplaceApp(string path, IReadOnlyCollection<string>? obbPaths = null)
         {
+            Log.Information("Backing up data directory");
+            string? dataBackupPath = null;
+            try
+            {
+                dataBackupPath = await CreateDataBackup();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to create data backup");
+                dataBackupPath = null; // Indicate that the backup failed
+            }
+            
             try
             {
                 if (InstalledApp != null)
@@ -293,7 +339,20 @@ namespace QuestPatcher.Core
                 Log.Warning("Continuing with installation");
             }
             
-            await _debugBridge.InstallApp(path);
+            await InstallApp(path, obbPaths);
+            
+            if (dataBackupPath != null)
+            {
+                Log.Information("Restoring data backup");
+                try
+                {
+                    await RestoreDataBackup(dataBackupPath);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to restore data backup");
+                }
+            }
         }
 
         /// <summary>
@@ -307,9 +366,18 @@ namespace QuestPatcher.Core
             _quit();
         }
         
-        public async Task InstallApp(string path)
+        public async Task InstallApp(string path, IReadOnlyCollection<string>? obbPaths = null)
         {
             await _debugBridge.InstallApp(path);
+            if (obbPaths != null)
+            {
+                await _debugBridge.CreateDirectory(ObbPath);
+                foreach (string obbPath in obbPaths)
+                {
+                    string obbPathOnQuest = Path.Combine(ObbPath, Path.GetFileName(obbPath));
+                    await _debugBridge.UploadFile(obbPath, obbPathOnQuest);
+                }
+            }
         }
 
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")

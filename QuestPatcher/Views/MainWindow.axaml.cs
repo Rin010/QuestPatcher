@@ -13,10 +13,7 @@ namespace QuestPatcher.Views
 #if DEBUG
             this.AttachDevTools();
 #endif
-            
-        
-
-    }
+        }
 
         private void InitializeComponent()
         {
@@ -29,8 +26,6 @@ namespace QuestPatcher.Views
             ExtendClientAreaChromeHints =
                 Avalonia.Platform.ExtendClientAreaChromeHints.PreferSystemChrome |
                 Avalonia.Platform.ExtendClientAreaChromeHints.OSXThickTitleBar;
-
-           
         }
     }
 }

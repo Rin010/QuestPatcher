@@ -18,7 +18,7 @@ namespace QuestPatcher.ViewModels
             MainService = mainService;
 
             // Set the window name based on the QuestPatcher version
-            WindowName = $"QuestPatcher v{VersionUtil.QuestPatcherVersion} [Modified By MicroBlock]";
+            WindowName = $"QuestPatcher v{VersionUtil.QuestPatcherVersion} [Modified By MicroBlock & SkyQe]";
         }
     }
 }

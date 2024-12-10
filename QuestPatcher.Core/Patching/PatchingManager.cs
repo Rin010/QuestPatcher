@@ -88,6 +88,7 @@ namespace QuestPatcher.Core.Patching
             if (_libUnityIndex == null)
             {
                 Log.Debug("Downloading libunity index for the first time . . .");
+
                 try
                 {
                     _libUnityIndex = await client.GetFromJsonAsync<Dictionary<string, Dictionary<string, string>>>(repoRoot + "/index.json");
@@ -230,6 +231,17 @@ namespace QuestPatcher.Core.Patching
                         layerIntent,
                     },
                 });
+            }
+
+            if (permissions.Passthrough)
+            {
+                addingFeatures.Add("com.oculus.feature.PASSTHROUGH");
+            }
+
+            if (permissions.BodyTracking)
+            {
+                addingFeatures.Add("com.oculus.software.body_tracking");
+                addingPermissions.Add("com.oculus.permission.BODY_TRACKING");
             }
 
             // Find which features and permissions already exist to avoid adding existing ones

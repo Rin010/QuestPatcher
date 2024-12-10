@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:QuestPatcher.Resources"
              xmlns:moddingViewModels="clr-namespace:QuestPatcher.ViewModels.Modding"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="QuestPatcher.Views.Modding.ModView">
@@ -11,6 +12,9 @@
   <UserControl.Styles>
     <Style Selector="DockPanel#MainModPanel:pointerover">
       <Setter Property="Background" Value="{DynamicResource ModHover}"/>
+    </Style>
+    <Style Selector="DockPanel#MainModPanel">
+      <Setter Property="Background" Value="Transparent"/>
     </Style>
   </UserControl.Styles>
   
@@ -28,8 +32,12 @@
         <TextBlock Text="{Binding Description}" FontSize="10"/>
       </StackPanel>
       <TextBlock Text="{Binding Author}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Top"/>
-      <Button VerticalAlignment="Bottom" Margin="0 0 0 5" HorizontalAlignment="Left" FontSize="13" IsEnabled="{Binding Locker.IsFree}" Command="{Binding OnDelete}">删除</Button>
-      <ToggleSwitch VerticalAlignment="Bottom" HorizontalAlignment="Right" OffContent="禁用" OnContent="启用" IsChecked="{Binding IsInstalled}" IsEnabled="{Binding Locker.IsFree}" />
+      <Button VerticalAlignment="Bottom" Margin="0 0 0 5" HorizontalAlignment="Left" FontSize="13" IsEnabled="{Binding Locker.IsFree}" Command="{Binding OnDelete}" Content="{x:Static res:Strings.Generic_Delete}"/>
+      <ToggleSwitch VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                    OffContent="{x:Static res:Strings.Generic_Disabled}"
+                    OnContent="{x:Static res:Strings.Generic_Enabled}" 
+                    IsChecked="{Binding IsInstalled}"
+                    IsEnabled="{Binding Locker.IsFree}" />
     </Panel>
   </DockPanel>
 </UserControl>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace QuestPatcher.Core
@@ -7,7 +8,10 @@ namespace QuestPatcher.Core
     {
         Task<bool> PromptAppNotInstalled();
 
-        Task<bool> CheckUpdate();
+        Task PromptUpdateAvailable(string latest);
+        
+        Task PromptUpdateCheckFailed(Exception? exception);
+
         Task<bool> PromptAdbDisconnect(DisconnectionType type);
 
         Task<AdbDevice?> PromptSelectDevice(List<AdbDevice> devices);

@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using QuestPatcher.Core;
 using QuestPatcher.Core.Modding;
 using QuestPatcher.Models;
+using QuestPatcher.Utils;
+using ReactiveUI;
 
 namespace QuestPatcher.ViewModels.Modding
 {
@@ -13,6 +15,18 @@ namespace QuestPatcher.ViewModels.Modding
         public string Title { get; }
 
         public bool ShowBrowse { get; }
+        
+        private bool _showDownloadLocalization = true;
+
+        public bool ShowDownloadLocalization
+        {
+            get => _showDownloadLocalization;
+            private set
+            {
+                _showDownloadLocalization = value;
+                this.RaisePropertyChanged();
+            }
+        }
 
         public OperationLocker Locker { get; }
         public ObservableCollection<ModViewModel> DisplayedMods { get; } = new();
@@ -34,13 +48,20 @@ namespace QuestPatcher.ViewModels.Modding
                 if (args.Action == NotifyCollectionChangedAction.Reset)
                 {
                     DisplayedMods.Clear();
+                    ShowDownloadLocalization = false;
                     return;
                 }
 
+                bool newItemsContainsPolyglot = false;
                 if (args.NewItems != null)
                 {
                     foreach (IMod mod in args.NewItems)
                     {
+                        if (mod.Id == "PolyglotInject")
+                        {
+                            ShowDownloadLocalization = false;
+                            newItemsContainsPolyglot = true;
+                        }
                         DisplayedMods.Add(new ModViewModel(mod, modManager, installManager, mainWindow, locker));
                     }
                 }
@@ -48,6 +69,10 @@ namespace QuestPatcher.ViewModels.Modding
                 {
                     foreach (IMod mod in args.OldItems)
                     {
+                        if (!newItemsContainsPolyglot && mod.Id == "PolyglotInject") // it may be moved so it is still in the collections
+                        {
+                            ShowDownloadLocalization = true;
+                        }
                         DisplayedMods.Remove(DisplayedMods.Single(modView => modView.Mod == mod));
                     }
                 }
@@ -58,9 +83,15 @@ namespace QuestPatcher.ViewModels.Modding
         {
             await _browseManager.ShowModsBrowse();
         }
-        public async void OnCheckCoremodsClick()
+        
+        public async void OnCheckCoreModsClick()
         {
             await _browseManager.CheckCoreMods(true,true, true);
+        }
+
+        public void OnDownloadLocalizationClick()
+        {
+            Util.OpenWebpage("https://github.com/qe201020335/PolyglotInject/releases");
         }
     }
 }

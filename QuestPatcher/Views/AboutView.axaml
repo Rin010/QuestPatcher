@@ -1,0 +1,28 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:QuestPatcher.Resources"
+             xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="QuestPatcher.Views.AboutView">
+  <Design.DataContext>
+    <viewModels:AboutViewModel />
+  </Design.DataContext>
+  <DockPanel VerticalAlignment="Stretch" Margin="20 0 20 20" HorizontalAlignment="Stretch">
+    <StackPanel DockPanel.Dock="Top">
+      <UserControl Width="500" Margin="0 15 0 15" VerticalAlignment="Top" Content="{Binding ProgressView}"
+                 HorizontalAlignment="Center" DockPanel.Dock="Top" />
+      <StackPanel Spacing="12">
+        <TextBlock FontSize="20">教程/关于</TextBlock>
+        <StackPanel Spacing="16" Orientation="Horizontal">
+          <Button Command="{Binding ShowTutorial}" VerticalAlignment="Center" FontSize="12" Padding="8" Content="查看教程"/>
+          <Button Command="{Binding OpenSourcePage}" VerticalAlignment="Center" FontSize="12" Padding="8" Content="开源地址"/>
+          <Button Command="{Binding OpenOriginalSourcePage}" VerticalAlignment="Center" FontSize="12" Padding="8" Content="原项目地址"/>
+          <Button Command="{Binding OpenMbPage}" VerticalAlignment="Center" FontSize="12" Padding="8" Content="@MicroBlock"/>
+          <Button Command="{Binding OpenSkyQePage}" VerticalAlignment="Center" FontSize="12" Padding="8" Content="@Sky·Qe"/>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </DockPanel>
+</UserControl>

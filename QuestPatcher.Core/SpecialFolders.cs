@@ -35,6 +35,11 @@ namespace QuestPatcher.Core
         /// Stores APKs being processed during patching
         /// </summary>
         public string PatchingFolder { get; }
+        
+        /// <summary>
+        /// Stores file for downgrading
+        /// </summary>
+        public string DowngradeFolder { get; }
 
         /// <summary>
         /// Sets all the special folder paths.
@@ -51,6 +56,8 @@ namespace QuestPatcher.Core
             TempFolder = Path.Combine(Path.GetTempPath(), "QuestPatcher");
             PatchingFolder = Path.Combine(TempFolder, "patching");
             PatchingFolder = Path.Combine(TempFolder, "patching");
+            
+            DowngradeFolder = Path.Combine(TempFolder, "downgrade");
         }
 
         /// <summary>
@@ -70,6 +77,7 @@ namespace QuestPatcher.Core
             }
             Directory.CreateDirectory(TempFolder);
             Directory.CreateDirectory(PatchingFolder);
+            Directory.CreateDirectory(DowngradeFolder);
         }
     }
 }

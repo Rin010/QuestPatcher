@@ -564,12 +564,12 @@ namespace QuestPatcher.Core
         /// <returns>The content headers returned with the file in the HTTP response.</returns>
         public async Task<HttpContentHeaders> DownloadUri(string url, string saveName, string? overrideFileName = null)
         {
-            Log.Information("[ Downloader ] Downloading {Url}\n To {SaveName}", url, saveName);
+            Log.Debug("Downloading {Url}\n To {SaveName}", url, saveName);
             try
             {
                 DownloadingFileName = overrideFileName ?? Path.GetFileName(saveName);
 
-                using var fileStream = File.Open(saveName, FileMode.Create);
+                await using var fileStream = File.Open(saveName, FileMode.Create);
                 return await DownloadToStreamWithProgressAsync(url, fileStream);
             }
             catch (HttpRequestException ex)

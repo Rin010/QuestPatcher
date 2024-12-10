@@ -9,9 +9,12 @@ using QuestPatcher.Core;
 using QuestPatcher.Core.Models;
 using QuestPatcher.Core.Patching;
 using QuestPatcher.Core.Utils;
+using QuestPatcher.ModBrowser;
 using QuestPatcher.Models;
+using QuestPatcher.Resources;
 using QuestPatcher.Utils;
 using QuestPatcher.ViewModels;
+using QuestPatcher.ViewModels.ModBrowser;
 using QuestPatcher.ViewModels.Modding;
 using QuestPatcher.Views;
 using Serilog;
@@ -31,16 +34,33 @@ namespace QuestPatcher.Services
         private LoggingViewModel? _loggingViewModel;
         private OperationLocker? _operationLocker;
         private BrowseImportManager? _browseManager;
+        private ExternalModManager _externalModManager;
         private OtherItemsViewModel? _otherItemsView;
         private PatchingViewModel? _patchingView;
+        private AboutViewModel? _aboutView;
+        private BrowseModViewModel? _browseModView;
 
         private readonly ThemeManager _themeManager;
         private bool _isShuttingDown;
+        private bool _updateChecked;
 
         public QuestPatcherUiService(IClassicDesktopStyleApplicationLifetime appLifetime) : base(new UIPrompter())
         {
             _appLifetime = appLifetime;
             _themeManager = new ThemeManager(Config, SpecialFolders);
+
+            // Deal with language configuration before we load the UI
+            try
+            {
+                var language = Config.Language.ToCultureInfo();
+                Strings.Culture = language;
+            }
+            catch (Exception)
+            {
+                Log.Warning("Failed to set language from config: {Code}", Config.Language);
+                Config.Language = Language.Default;
+                Strings.Culture = null;
+            }
 
             _mainWindow = PrepareUi();
 
@@ -63,24 +83,27 @@ namespace QuestPatcher.Services
             _operationLocker = new();
             _operationLocker.StartOperation(); // Still loading
             _browseManager = new(OtherFilesManager, ModManager, window, InstallManager, _operationLocker, this, FilesDownloader, SpecialFolders);
+            _externalModManager = new ExternalModManager(FilesDownloader, _browseManager!);
             ProgressViewModel progressViewModel = new(_operationLocker, FilesDownloader);
             _otherItemsView = new OtherItemsViewModel(OtherFilesManager, window, _browseManager, _operationLocker, progressViewModel);
             _patchingView = new PatchingViewModel(Config, _operationLocker, PatchingManager, InstallManager, window, progressViewModel, FilesDownloader);
+            _aboutView = new AboutViewModel(progressViewModel);
+            _browseModView = new BrowseModViewModel(window, Config, _operationLocker, progressViewModel, InstallManager, ModManager, _externalModManager);
 
-            var loadedView = new LoadedViewModel(
-                _patchingView,
-                new ManageModsViewModel(ModManager, InstallManager, window, _operationLocker, progressViewModel, _browseManager),
-                _loggingViewModel,
-                new ToolsViewModel(Config, progressViewModel, _operationLocker, window, SpecialFolders, InstallManager, DebugBridge, this, InfoDumper,
-                    _themeManager, _browseManager, ModManager),
-                _otherItemsView,
-                Config,
-                InstallManager,
-                _browseManager
-            );
-                
             MainWindowViewModel mainWindowViewModel = new(
-                loadedView,
+                new LoadedViewModel(
+                    _patchingView,
+                    new ManageModsViewModel(ModManager, InstallManager, window, _operationLocker, progressViewModel, _browseManager),
+                    _loggingViewModel,
+                    new ToolsViewModel(Config, progressViewModel, _operationLocker, window, SpecialFolders, InstallManager, DebugBridge, this, InfoDumper,
+                        _themeManager, _browseManager, ModManager, ExitApplication),
+                    _otherItemsView,
+                    _aboutView,
+                    Config,
+                    InstallManager,
+                    _browseManager,
+                    _browseModView
+                ),
                 new LoadingViewModel(progressViewModel, _loggingViewModel, Config),
                 this
             );
@@ -95,6 +118,12 @@ namespace QuestPatcher.Services
             if (_operationLocker.IsFree) // Necessary since the operation may have started earlier if this is the first load. Otherwise, we need to start the operation on subsequent loads
             {
                 _operationLocker.StartOperation();
+            }
+
+            if (!_updateChecked)
+            {
+                _ = CheckForUpdates(); // Check for updates in the background
+                _updateChecked = true;
             }
 
             try
@@ -114,11 +143,11 @@ namespace QuestPatcher.Services
                 };
                 
                 builder1.OkButton.Text = "安装APK";
-                if (await builder1.OpenDialogue(_mainWindow) && _browseManager != null)
+                if (await builder1.OpenDialogue(_mainWindow))
                 {
-                    //BUG Sky: it will try to lock the ui again and cause an unhandled exception
-                    //TODO Sky: proper fix without lockui parameter
-                    if (!await _browseManager!.AskToInstallApk(deleteMods:false, lockUi:false))
+                    _operationLocker.FinishOperation(); //ui will be locked when the game is installing
+                    bool success = await OpenGameInstallerMenu(false);
+                    if (!success)
                     {
                         ExitApplication();
                     }
@@ -167,11 +196,11 @@ namespace QuestPatcher.Services
             }
             catch (Exception ex)
             {
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "出错了！",
-                    Text = "加载的过程中出现了意料之外的错误！",
-                    HideCancelButton = true
+                    Title = Strings.Loading_UnhandledError_Title,
+                    Text = Strings.Loading_UnhandledError_Text,
+                    HideCancelButton = true,
                 };
                 builder.WithException(ex);
                 await builder.OpenDialogue(_mainWindow);
@@ -195,12 +224,12 @@ namespace QuestPatcher.Services
             // We must set this to true at first, even if the user might press OK later.
             // This is since the caller of the event will not wait for our async handler to finish
             args.Cancel = true;
-            DialogBuilder builder = new()
+            var builder = new DialogBuilder
             {
-                Title = "操作仍在处理中！",
-                Text = "QuestPatcher正在处理中。在处理完成前强行关闭可能会损坏你的游戏！"
+                Title = Strings.Prompt_OperationInProgress_Title,
+                Text = Strings.Prompt_OperationInProgress_Text
             };
-            builder.OkButton.Text = "强制关闭";
+            builder.OkButton.Text = Strings.Generic_CloseAnyway;
 
             // Now we can exit the application if the user decides to
             if (await builder.OpenDialogue(_mainWindow))
@@ -214,7 +243,7 @@ namespace QuestPatcher.Services
         /// </summary>
         public async Task OpenChangeAppMenu(bool quitIfNotSelected)
         {
-            Config.AppId = CoreModUtils.BeatSaberPackageID;
+            Config.AppId = SharedConstants.BeatSaberPackageID;
             DialogBuilder builder = new()
             {
                 Title = "该改版无法Mod其他应用！",
@@ -245,9 +274,46 @@ namespace QuestPatcher.Services
             menuWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             await menuWindow.ShowDialog(_mainWindow);
         }
+        
+        public void OpenDowngradeMenu()
+        {
+            Window downgradeWindow = new DowngradeWindow();
+            var vm = new DowngradeViewModel(downgradeWindow, Config, InstallManager, DowngradeManger, _operationLocker!);
+            downgradeWindow.DataContext = vm;
+            downgradeWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            _ = downgradeWindow.ShowDialog(_mainWindow);
+        }
+        
+        /// <summary>
+        /// Open the game installer menu to install a new version of the game.
+        /// Will reload QuestPatcher if the installation is successful.
+        /// </summary>
+        /// <param name="isVersionSwitching">Whether we are switching versions or freshly installing</param>
+        /// <returns>Whether new apk is successfully installed</returns>
+        public async Task<bool> OpenGameInstallerMenu(bool isVersionSwitching)
+        {
+            Window downgradeWindow = new GameInstallerWindow();
+            var vm = new GameInstallerViewModel(isVersionSwitching, downgradeWindow, this, _operationLocker!, InstallManager, ModManager);
+            downgradeWindow.DataContext = vm;
+            downgradeWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            _ = downgradeWindow.ShowDialog(_mainWindow);
+            bool succeeded = await vm.NewAppInstalled;
+            if (succeeded)
+            {
+                DialogBuilder builder1 = new()
+                {
+                    Title = "安装已完成！",
+                    Text = "点击确定以重启QuestPatcher",
+                    HideCancelButton = true
+                };
+                await builder1.OpenDialogue(_mainWindow);
+                await Reload();
+            }
 
-        //TODO Sky: avoid making it public
-        public async Task Reload()
+            return succeeded;
+        }
+
+        private async Task Reload()
         {
             if (_loggingViewModel != null)
             {

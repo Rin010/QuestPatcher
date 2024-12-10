@@ -195,8 +195,6 @@ namespace QuestPatcher.Core.Modding
 
             try
             {
-                await _debugBridge.RunShellCommand($"pm grant {_config.AppId} android.permission.READ_EXTERNAL_STORAGE");
-                await _debugBridge.RunShellCommand($"pm grant {_config.AppId} android.permission.WRITE_EXTERNAL_STORAGE");
                 await _debugBridge.RunShellCommand($"appops set --uid {_config.AppId} MANAGE_EXTERNAL_STORAGE allow");
             }
             catch (AdbException ex)

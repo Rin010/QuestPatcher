@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
+             xmlns:res="clr-namespace:QuestPatcher.Resources"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="550"
              x:Class="QuestPatcher.Views.LoadedView"
              DragDrop.AllowDrop="True">
@@ -15,10 +16,7 @@
       <ExperimentalAcrylicBorder DockPanel.Dock="Left" Width="240" Material="{DynamicResource MainBackgroundMaterial}">
         <StackPanel Orientation="Vertical" Margin="10 30 10 10" Spacing="3">
           <TextBlock TextAlignment="Center" Text="{Binding WelcomeText}" />
-          <TextBlock TextAlignment="Center" Text="Modified by MicroBlock &amp; SkyQe" FontSize="10"
-                     TextTrimming="CharacterEllipsis" />
-          <!-- <TextBlock TextAlignment="Center" Text="Modified by MicroBlock &amp; SkyQe &amp; WGzeyu" FontSize="10" -->
-          <!--            TextTrimming="CharacterEllipsis" /> -->
+          <TextBlock TextAlignment="Center" Text="{Binding SelectedAppText}" FontSize="10" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
       </ExperimentalAcrylicBorder>
         
@@ -28,98 +26,40 @@
     </DockPanel>
     
     <TabControl Classes="sidebar">
-      <TabItem Header="打补丁" IsVisible="{Binding NeedsPatchingView}" IsSelected="{Binding !AppInfo.IsModded}">
+      <TabItem Header="{x:Static res:Strings.SideBarHeader_Patching}" IsVisible="{Binding NeedsPatchingView}" IsSelected="{Binding !AppInfo.IsModded}">
         <UserControl Content="{Binding PatchingView}" />
       </TabItem>
-      <TabItem Header="管理Mod" IsVisible="{Binding AppInfo.IsModded}" IsSelected="{Binding AppInfo.IsModded}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+      <TabItem Header="{x:Static res:Strings.SideBarHeader_ModManage}" IsVisible="{Binding AppInfo.IsModded}" IsSelected="{Binding AppInfo.IsModded}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <UserControl Content="{Binding ManageModsView}" />
       </TabItem>
-      <TabItem Header="杂项" IsVisible="{Binding AppInfo.IsModded}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+      <TabItem Header="更多Mod" IsVisible="{Binding AppInfo.IsModded}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <UserControl Content="{Binding BrowseModView}" />
+      </TabItem>
+      <TabItem Header="{x:Static res:Strings.SideBarHeader_Other}" IsVisible="{Binding AppInfo.IsModded}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
         <UserControl Content="{Binding OtherItemsView}" />
       </TabItem>
-      <TabItem Header="工具 &amp; 设置">
+      <TabItem Header="{x:Static res:Strings.SideBarHeader_Options}">
         <UserControl Content="{Binding ToolsView}" />
       </TabItem>
       <TabItem Header="教程 &amp; 关于">
-        <UserControl>
-          <Design.DataContext>
-            <viewModels:ToolsViewModel />
-          </Design.DataContext>
-          <DockPanel VerticalAlignment="Stretch" Margin="20 0 20 20" HorizontalAlignment="Stretch">
-
-            <StackPanel Margin="0 20 0 0" Spacing="10">
-              <TextBlock FontSize="20">教程/关于</TextBlock>
-              <StackPanel Margin="0 20 0 0" Spacing="10" Orientation="Horizontal">
-                <Button
-                  Command="{Binding ShowTutorial}"
-                  HorizontalContentAlignment="Center"
-                  HorizontalAlignment="Left"
-                  VerticalAlignment="Top"
-                  FontSize="12" Padding="10" Margin="6">
-                  查看教程
-                </Button>
-                <Button
-                  Command="{Binding OpenSourceAddr}"
-                  HorizontalContentAlignment="Center"
-                  HorizontalAlignment="Left"
-                  VerticalAlignment="Top"
-                  FontSize="12" Padding="10" Margin="6">
-                  开源地址
-                </Button>
-                <Button
-                  Command="{Binding OpenSourceFKAddr}"
-                  HorizontalContentAlignment="Center"
-                  HorizontalAlignment="Left"
-                  VerticalAlignment="Top"
-                  FontSize="12" Padding="10" Margin="6">
-                  原项目地址
-                </Button>
-
-                <Button Command="{Binding MBAddr}"
-                        HorizontalContentAlignment="Center"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        FontSize="12" Padding="10" Margin="6">
-                  @MicroBlock
-                </Button>
-                <Button Command="{Binding SkyQeAddr}"
-                        HorizontalContentAlignment="Center"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        FontSize="12" Padding="10" Margin="6">
-                  @Sky·Qe
-                </Button>
-                <!-- <Button Command="{Binding WGZEYUAddr}" -->
-                <!--         HorizontalContentAlignment="Center" -->
-                <!--         HorizontalAlignment="Left" -->
-                <!--         VerticalAlignment="Top" -->
-                <!--         FontSize="12" Padding="10" Margin="6"> -->
-                <!--   @WGzeyu -->
-                <!-- </Button> -->
-
-
-              </StackPanel>
-
-            </StackPanel>
-            <UserControl Width="500" Margin="0 15 0 0" VerticalAlignment="Bottom" Content="{Binding ProgressView}"
-                         HorizontalAlignment="Center" DockPanel.Dock="Bottom" />
-
-          </DockPanel>
-        </UserControl>
-
+        <UserControl Content="{Binding AboutView}" />
       </TabItem>
     </TabControl>
     
     <StackPanel Margin="25" VerticalAlignment="Bottom" HorizontalAlignment="Left" Spacing="30">
-      <ToggleSwitch IsChecked="{Binding Config.DisplayLogs}" OffContent="隐藏" OnContent="显示">显示日志</ToggleSwitch>
+      <ToggleSwitch 
+          IsChecked="{Binding Config.DisplayLogs}" 
+          Content="{x:Static res:Strings.Global_DisplayLogs}"
+          OnContent="{x:Static res:Strings.Generic_On}" 
+          OffContent="{x:Static res:Strings.Generic_Off}"/>
       <StackPanel>
-        <TextBlock Text="{Binding AppInfo.Version, StringFormat=APK版本: {0}}" FontWeight="Light" FontSize="12" />
-        <TextBlock Text="APK为64位" IsVisible="{Binding AppInfo.Is64Bit}" FontWeight="Light" FontSize="12"/>
-        <TextBlock Text="APK为32位" IsVisible="{Binding !AppInfo.Is64Bit}" FontWeight="Light" FontSize="12"/>
-        <TextBlock Text="APK已经打过补丁" IsVisible="{Binding AppInfo.IsModded}" FontWeight="Light" FontSize="12" />
-        <TextBlock Text="APK没有打过补丁" IsVisible="{Binding !AppInfo.IsModded}" FontWeight="Light" FontSize="12" />
+        <TextBlock Text="{Binding AppInfo.Version, StringFormat={x:Static res:Strings.LoadedAPKStatus_Version}}" FontWeight="Light" FontSize="12" />
+        <TextBlock Text="{x:Static res:Strings.LoadedAPKStatus_64bit}" IsVisible="{Binding AppInfo.Is64Bit}" FontWeight="Light" FontSize="12"/>
+        <TextBlock Text="{x:Static res:Strings.LoadedAPKStatus_32bit}" IsVisible="{Binding !AppInfo.Is64Bit}" FontWeight="Light" FontSize="12"/>
+        <TextBlock Text="{x:Static res:Strings.LoadedAPKStatus_Modded}" IsVisible="{Binding AppInfo.IsModded}" FontWeight="Light" FontSize="12" />
+        <TextBlock Text="{x:Static res:Strings.LoadedAPKStatus_NotModded}" IsVisible="{Binding !AppInfo.IsModded}" FontWeight="Light" FontSize="12" />
 
-        <TextBlock Text="{Binding Version, StringFormat=QP版本: {0}}" FontWeight="Light" FontSize="12" />
+        <TextBlock Text="{Binding Version, StringFormat={x:Static res:Strings.LoadedQPVersion}}" FontWeight="Light" FontSize="12" />
       </StackPanel>
     </StackPanel>
   </Panel>

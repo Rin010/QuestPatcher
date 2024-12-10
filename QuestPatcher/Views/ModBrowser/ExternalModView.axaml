@@ -1,0 +1,48 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:modBrowserVMs="clr-namespace:QuestPatcher.ViewModels.ModBrowser"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="QuestPatcher.Views.ModBrowser.ExternalModView">
+  <Design.DataContext>
+    <modBrowserVMs:ExternalModViewModel />
+  </Design.DataContext>
+  <UserControl.Styles>
+    <Style Selector="Panel#ModContainer:pointerover">
+      <Setter Property="Background" Value="{DynamicResource ModHover}" />
+    </Style>
+    <Style Selector="Panel#ModContainer">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel Name="ModContainer" PointerPressed="OnPointerPressed">
+    <DockPanel Margin="8 4 8 4">
+      <!-- TODO: Add image here -->
+      <!-- <Panel Width="177.778" DockPanel.Dock="Left"> -->
+      <!--   <Image Source="{Binding CoverImage}" Stretch="UniformToFill" IsVisible="{Binding CoverImage, Converter={x:Static ObjectConverters.IsNotNull}}" /> -->
+      <!--   <Image DockPanel.Dock="Left" Source="/Assets/questpatcher-logo.ico" Width="50" IsVisible="{Binding CoverImage, Converter={x:Static ObjectConverters.IsNull}}" /> -->
+      <!-- </Panel> -->
+      <CheckBox DockPanel.Dock="Left" Margin="0 0 4 0" VerticalAlignment="Center"
+                IsVisible="{Binding Parent.ShowBatchInstall}" IsChecked="{Binding IsChecked}"
+                IsEnabled="{Binding ShouldEnableButton}" />
+      <Button DockPanel.Dock="Right" Margin="4 0 0 0" MinWidth="60" VerticalAlignment="Center"
+              IsEnabled="{Binding ShouldEnableButton}" HorizontalContentAlignment="Center"
+              Command="{Binding InstallClicked}" Content="{Binding InstallButtonText}" />
+      <StackPanel VerticalAlignment="Top" HorizontalAlignment="Stretch" Spacing="5">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="{Binding Name}" />
+            <TextBlock Text="{Binding Version}" FontSize="10" VerticalAlignment="Bottom" />
+            <TextBlock Text="{Binding InstalledVersionText}" FontSize="10" VerticalAlignment="Bottom" />
+          </StackPanel>
+          <TextBlock DockPanel.Dock="Right" Text="{Binding Author}" FontSize="10" HorizontalAlignment="Right"
+                     VerticalAlignment="Center" />
+        </DockPanel>
+        <TextBlock Text="{Binding Description}" FontSize="10" />
+      </StackPanel>
+    </DockPanel>
+  </Panel>
+
+</UserControl>

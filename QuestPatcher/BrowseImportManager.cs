@@ -13,6 +13,7 @@ using QuestPatcher.Core;
 using QuestPatcher.Core.Modding;
 using QuestPatcher.Core.Utils;
 using QuestPatcher.Models;
+using QuestPatcher.Resources;
 using QuestPatcher.Services;
 using QuestPatcher.Utils;
 using Serilog;
@@ -34,7 +35,7 @@ namespace QuestPatcher
         private readonly OperationLocker _locker;
         private readonly QuestPatcherUiService _uiService;
         private readonly SpecialFolders _specialFolders;
-       
+
         private readonly FilePickerFileType _modsFilter = new("Quest Mods")
         {
             Patterns = new List<string>() { "*.qmod" }
@@ -62,128 +63,49 @@ namespace QuestPatcher
             };
         }
         
-        public async Task<bool> AskToInstallApk(bool deleteMods = true, bool lockUi = true)
+        public async Task InstallApkFromUrl(string url, string? saveFileName = null)
         {
-            var dialog = new OpenFileDialog
+            DialogBuilder dialog = new()
             {
-                AllowMultiple = false
+                Title = "即将开始安装",
+                Text = "安装可能需要两分钟左右，该过程中将暂时无法点击软件窗口，请耐心等待，\n点击下方“好的”按钮，即可开始安装。",
+                HideCancelButton = true
             };
-            FileDialogFilter filter=new();
-            filter.Extensions.Add("apk");
-            filter.Name = "Beat Saber APKs";
-            dialog.Filters.Add(filter);
-            var files = await dialog.ShowAsync(_mainWindow);
-            if (files == null || files.Length == 0) return false;
-            var file = files[0] ?? "";
-            if (!file.EndsWith(".apk"))
-            {
-                DialogBuilder builder1 = new()
-                {
-                    Title = "你选择的文件有误",
-                    Text = "你选择的文件有误，将不会继续安装。",
-                    HideCancelButton = true
-                };
-                await builder1.OpenDialogue(_mainWindow);
-                return false;
-            }
+            if (!await dialog.OpenDialogue(_mainWindow)) return;
 
-            {
-                DialogBuilder builder1 = new()
-                {
-                    Title = "即将开始安装",
-                    Text = "安装可能需要两分钟左右，该过程中将暂时无法点击软件窗口，请耐心等待，\n点击下方“好的”按钮，即可开始安装。",
-                };
-                if (!await builder1.OpenDialogue(_mainWindow)) return false;
-            }
-            
-            if (lockUi) _locker.StartOperation();
+            _locker.StartOperation();
 
             try
             {
-                //TODO Sky: Check deletion result and prompt retry if failed
-                if (deleteMods) await _modManager.DeleteAllMods();
-                await _installManager.ReplaceApp(file);
-            }
-            finally
-            {
-                if (lockUi) _locker.FinishOperation();
-            }
-            {
-                DialogBuilder builder1 = new()
-                {
-                    Title = "安装已完成！",
-                    Text = "点击确定以重启QuestPatcher",
-                    HideCancelButton = true
-                };
-                await builder1.OpenDialogue(_mainWindow);
-            }
-            await _uiService.Reload();
-            return true;
-        }
-        
-        public async Task InstallApkFromUrl(string url)
-        {
-            {
-                DialogBuilder builder1 = new()
-                {
-                    Title = "即将开始安装",
-                    Text = "安装可能需要两分钟左右，该过程中将暂时无法点击软件窗口，请耐心等待，\n点击下方“好的”按钮，即可开始安装。",
-                    HideCancelButton = true
-                };
-                builder1.OkButton.ReturnValue = false;
-                await builder1.OpenDialogue(_mainWindow);
-            }
-            _locker.StartOperation();
-            WebClient client = new();
-            File.Delete(_specialFolders.TempFolder + "/apkToInstall.apk");
-            await client.DownloadFileTaskAsync(url+"?_="+ DateTime.Now.ToFileTime(), _specialFolders.TempFolder+"/apkToInstall.apk");
-            await _installManager.InstallApp( _specialFolders.TempFolder + "/apkToInstall.apk");
-            _locker.FinishOperation();
-            {
+                string path = Path.Combine(_specialFolders.TempFolder, saveFileName ?? "apkToInstall.apk");
+                if (File.Exists(path)) File.Delete(path);
+                await _filesDownloader.DownloadUri(url, path, saveFileName ?? "Apk");
+                await _installManager.InstallApp(path);
                 DialogBuilder builder1 = new()
                 {
                     Title = "安装已完成！",
                     Text = "点击确定以继续",
                     HideCancelButton = true
                 };
-                builder1.OkButton.ReturnValue = false;
+                builder1.OkButton.Text = "确定";
                 await builder1.OpenDialogue(_mainWindow);
-            }
-        }
-        
-        public async Task<bool> UninstallAndInstall()
-        {
-            DialogBuilder builder1 = new()
-            {
-                Title = "更换游戏版本",
-                Text = "换版本会删除所有的Mod，但不会影响您的歌曲、模型资源。降级完成后您可以把对应版本的Mod重新装回去，即可继续使用这些资源。\n\n点击继续并选择目标版本的游戏APK即可完成更换版本\n如果您还没有游戏APK，可以进入网盘下载",
-            };
-            builder1.OkButton.Text = "继续";
-            builder1.WithButtons(new ButtonInfo
-            {
-                Text = "进入网盘",
-                CloseDialogue = false,
-                OnClick = () => Util.OpenWebpage("https://bs.wgzeyu.com/drive/")
-            });
-            
-            if (!await builder1.OpenDialogue(_mainWindow)) return false;
-            
-            try
-            {
-                return await AskToInstallApk(deleteMods:true, lockUi:true);
             }
             catch (Exception e)
             {
-                var builder2 = new DialogBuilder {
+                Log.Error(e, "Failed to install APK from URL: {Message}", e.Message);
+                DialogBuilder builder = new()
+                {
                     Title = "出错了！",
-                    Text = "在更换版本的过程中出现了一个意料之外的错误。",
+                    Text = "APK下载或安装过程中出现了一个意料之外的错误。",
                     HideCancelButton = true
                 };
-                builder2.WithException(e);
-                await builder2.OpenDialogue(_mainWindow);
+                builder.WithException(e);
+                await builder.OpenDialogue(_mainWindow);
             }
-
-            return false;
+            finally
+            {
+                _locker.FinishOperation();
+            }
         }
 
         /// <summary>
@@ -299,8 +221,8 @@ namespace QuestPatcher
             {
                 var builder = new DialogBuilder
                 {
-                    Title = "Failed to download file",
-                    Text = $"Downloading the file from {uri} failed, and thus the file could not be imported.",
+                    Title = Strings.BrowseImport_DownloadFailed_Title,
+                    Text = String.Format(Strings.BrowseImport_DownloadFailed_Text, uri),
                     HideCancelButton = true
                 };
                 await builder.OpenDialogue(_mainWindow);
@@ -321,8 +243,8 @@ namespace QuestPatcher
             {
                 var builder = new DialogBuilder
                 {
-                    Title = "Failed to import file from URL",
-                    Text = $"The server at {uri} did not provide a valid file extension, and so QuestPatcher doesn't know how the import the file.",
+                    Title = Strings.BrowseImport_BadUrl_Title,
+                    Text = String.Format(Strings.BrowseImport_BadUrl_Text, uri),
                     HideCancelButton = true
                 };
                 await builder.OpenDialogue(_mainWindow);
@@ -389,16 +311,16 @@ namespace QuestPatcher
 
             bool multiple = failedFiles.Count > 1;
 
-            DialogBuilder builder = new()
+            var builder = new DialogBuilder
             {
-                Title = "导入失败",
+                Title = Strings.BrowseImport_ImportFailed_Title,
                 HideCancelButton = true
             };
 
             if (multiple)
             {
                 // Show the exceptions for multiple files in the logs to avoid a giagantic dialog
-                builder.Text = "有多个文件安装失败，请检查日志确认详情。";
+                builder.Text = Strings.BrowseImport_ImportFailed_Multiple_Text;
                 foreach (var pair in failedFiles)
                 {
                     Log.Error("{FileName} 安装失败：{Error}", Path.GetFileName(pair.Key), pair.Value.Message);
@@ -409,20 +331,20 @@ namespace QuestPatcher
             {
                 // Display single files with more detail for the user
                 string filePath = failedFiles.Keys.First();
-                var exception = failedFiles.Values.First();
-
+                var ex = failedFiles.Values.First();
+                string fileName = Path.GetFileName(filePath);
                 // Don't display the full stack trace for InstallationExceptions, since these are thrown by QP and are not bugs/issues
-                if (exception is InstallationException)
+                if (ex is InstallationException)
                 {
-                    builder.Text = $"{Path.GetFileName(filePath)}安装失败：{exception.Message}";
+                    builder.Text = String.Format(Strings.BrowseImport_ImportFailed_Single_Exception_Text, fileName, ex.Message);
                 }
                 else
                 {
-                    builder.Text = $"文件{Path.GetFileName(filePath)}安装失败";
-                    builder.WithException(exception);
+                    builder.Text = String.Format(Strings.BrowseImport_ImportFailed_Single_Text, fileName);
+                    builder.WithException(ex);
                 }
-                Log.Error("Failed to install {FileName}: {Error}", Path.GetFileName(filePath), exception.Message);
-                Log.Debug(exception, "Full Error");
+                Log.Error("Failed to install {FileName}: {Error}", fileName, ex.Message);
+                Log.Debug(ex, "Full Error");
             }
 
             await builder.OpenDialogue(_mainWindow);
@@ -560,11 +482,12 @@ namespace QuestPatcher
         {
             FileCopyType? selectedType = null;
 
-            DialogBuilder builder = new()
+            var builder = new DialogBuilder
             {
-                Title = "多种导入选项",
-                Text = $"{Path.GetFileName(path)}可以作为多种不同类型的文件导入，请选择你想要安装的内容。",
-                HideOkButton = true
+                Title = Strings.BrowseImport_MultipleImport_Title,
+                Text = String.Format(Strings.BrowseImport_MultipleImport_Text, Path.GetFileName(path)),
+                HideOkButton = true,
+                HideCancelButton = true
             };
 
             List<ButtonInfo> dialogButtons = new();
@@ -705,15 +628,15 @@ namespace QuestPatcher
             
         }
                 
-        private async Task<bool> InstallMissingCoreMods(IList<CoreModUtils.CoreMod> mods) {
-            using var client = new WebClient();
-            //TODO Sky: use AttemptImportUri & FileDownloader from upstream
+        private async Task<bool> InstallMissingCoreMods(IList<CoreModUtils.CoreMod> mods) 
+        {
             foreach(var mod in mods)
             {
-                var modUrl = mod.DownloadUrl.ToString();
+                string modUrl = mod.DownloadUrl.ToString();
                 if (_uiService.Config.UseMirrorDownload) modUrl = await DownloadMirrorUtil.Instance.GetMirrorUrl(modUrl);
-                await client.DownloadFileTaskAsync(modUrl, _specialFolders.TempFolder + "/coremod_tmp.qmod");
-                await TryImportMod(new FileImportInfo(_specialFolders.TempFolder + "/coremod_tmp.qmod"), true,true);
+                string path = Path.Combine(_specialFolders.TempFolder, mod.Filename ?? "coremod_tmp.qmod");
+                await _filesDownloader.DownloadUri(modUrl, path, mod.Filename ?? mod.Id);
+                await TryImportMod(new FileImportInfo(path) { IsTemporaryFile = true }, false, false);
             }
             await _modManager.SaveMods();
             return true;
@@ -724,10 +647,12 @@ namespace QuestPatcher
         /// Will prompt to ask the user if they want to install the mod in the case that it is outdated
         /// </summary>
         /// <param name="importInfo">Information about the mod file to import.</param>
+        /// <param name="checkCoreMods">Whether to check core mods before import the mod</param>
+        /// <param name="checkPackageVersion">Whether to check the package version indicated in the mod manifest</param>
         /// <returns>Whether or not the file could be imported as a mod</returns>
-        private async Task<bool> TryImportMod(FileImportInfo importInfo, bool avoidCoremodCheck = false,bool ignoreWrongVersion=false)
+        public async Task<bool> TryImportMod(FileImportInfo importInfo, bool checkCoreMods = true, bool checkPackageVersion = true)
         {
-            if (!avoidCoremodCheck)
+            if (checkCoreMods)
                 if (!await CheckCoreMods())
                     return false;
 
@@ -740,14 +665,13 @@ namespace QuestPatcher
 
             if (mod.ModLoader != _installManager.InstalledApp?.ModLoader)
             {
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "Mod注入器不匹配",
-                    Text = $"您正在安装的Mod需要 {mod.ModLoader} 注入器，但您的游戏是使用 {_installManager.InstalledApp?.ModLoader} 打的补丁。"
-                    + "\n您想使用所需的Mod注入器重新打补丁吗?"
+                    Title = Strings.Mod_WrongModLoader_Title,
+                    Text = String.Format(Strings.Mod_WrongModLoader_Text, mod.ModLoader, _installManager.InstalledApp?.ModLoader)
                 };
-                builder.OkButton.Text = "重打补丁";
-                builder.CancelButton.Text = "不是现在";
+                builder.OkButton.Text = Strings.Mod_WrongModLoader_Repatch;
+                builder.CancelButton.Text = Strings.Generic_NotNow;
                 if (await builder.OpenDialogue(_mainWindow))
                 {
                     _uiService.OpenRepatchMenu(mod.ModLoader);
@@ -759,15 +683,15 @@ namespace QuestPatcher
             Debug.Assert(_installManager.InstalledApp != null);
 
             // Prompt the user for outdated mods instead of enabling them automatically
-            if (mod.PackageVersion != null && mod.PackageVersion != _installManager.InstalledApp.Version &&!ignoreWrongVersion)
+            if (checkPackageVersion && mod.PackageVersion != null && mod.PackageVersion != _installManager.InstalledApp.Version)
             {
-                DialogBuilder builder = new()
+                var builder = new DialogBuilder
                 {
-                    Title = "版本不匹配的Mod",
-                    Text = $"该Mod是为{mod.PackageVersion}版本的游戏开发的，然而你当前安装的游戏版本是{_installManager.InstalledApp.Version}。启用这个Mod可能会导致游戏崩溃，也可能不管用。"
+                    Title = Strings.Mod_OutdatedMod_Title,
+                    Text = String.Format(Strings.Mod_OutdatedMod_Text, mod.PackageVersion, _installManager.InstalledApp.Version),
                 };
-                builder.OkButton.Text = "立即启用";
-                builder.CancelButton.Text = "取消";
+                builder.OkButton.Text = Strings.Mod_OutdatedMod_EnableNow;
+                builder.CancelButton.Text = Strings.Generic_Cancel;
 
                 if (!await builder.OpenDialogue(_mainWindow))
                 {

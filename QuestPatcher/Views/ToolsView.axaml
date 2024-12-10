@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:res="clr-namespace:QuestPatcher.Resources"
              xmlns:viewModels="clr-namespace:QuestPatcher.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="QuestPatcher.Views.ToolsView">
@@ -12,7 +13,14 @@
     <StackPanel DockPanel.Dock="Top">
       <UserControl Width="500" Margin="0 15 0 15" VerticalAlignment="Top" Content="{Binding ProgressView}" HorizontalAlignment="Center" DockPanel.Dock="Top"/>
       <StackPanel Spacing="10">
-        <TextBlock FontSize="20">便携操作</TextBlock>
+        <StackPanel Orientation="Horizontal" Spacing="15">
+          <TextBlock FontSize="20" Text="{x:Static res:Strings.Tools_Section_Tools}"/>
+          <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light" Text="{x:Static res:Strings.Tools_Section_Tools_Description}"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Command="{Binding DowngradeApp}" IsEnabled="{Binding PatchDowngradeAvailable }">一键降级</Button>
+          <TextBlock VerticalAlignment="Center" FontSize="12">通过差异文件来降级游戏，游戏必须为1.34.2以上版本并且未打补丁</TextBlock>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
           <Button Command="{Binding UninstallAndInstall}" IsEnabled="{Binding Locker.IsFree}">更换游戏版本</Button>
           <TextBlock VerticalAlignment="Center" FontSize="12">卸载游戏，然后安装指定的游戏APK</TextBlock>
@@ -21,52 +29,52 @@
           <Button Command="{Binding InstallServerSwitcher}" IsEnabled="{Binding Locker.IsFree}">安装Icey</Button>
           <TextBlock VerticalAlignment="Center" FontSize="12">将Icey安装到Quest</TextBlock>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="15">
-          <TextBlock FontSize="20">工具</TextBlock>
-          <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light">对于故障排除和管理安装很有用。</TextBlock>
-        </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding UninstallApp}" IsEnabled="{Binding Locker.IsFree}">卸载游戏</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">卸载你安装的游戏</TextBlock>
+          <Button Command="{Binding UninstallApp}" IsEnabled="{Binding Locker.IsFree}" Content="{x:Static res:Strings.Tools_Tool_UninstallApp}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_UninstallApp_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
           <Button Command="{Binding DeleteAllMods}" IsEnabled="{Binding Locker.IsFree}">删除所有Mod</Button>
           <TextBlock VerticalAlignment="Center" FontSize="12">可用于解决Mod出现兼容问题等原因导致的游戏闪退无法打开。把Mod删干净，重新装Mod。</TextBlock>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding RestartApp}" IsEnabled="{Binding Locker.IsFree}">重启游戏</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">强制终止并重启游戏</TextBlock>
+          <Button Command="{Binding RestartApp}" IsEnabled="{Binding Locker.IsFree}" Content="{x:Static res:Strings.Tools_Tool_RestartApp}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_RestartApp_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding OpenLogsFolder}">打开日志文件夹</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">打开我们存储日志的文件夹</TextBlock>
+          <Button Command="{Binding OpenLogsFolder}" Content="{x:Static res:Strings.Tools_Tool_LogFolder}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_LogFolder_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button IsEnabled="{Binding Locker.IsAdbAvailable}" Command="{Binding ToggleAdbLog}" Content="切换ADB日志"/>
-          <TextBlock VerticalAlignment="Center" FontSize="12">
-            开启ADB日志：为了使用这个，你必须让你的设备保持连接
-          </TextBlock>
+          <Button IsEnabled="{Binding Locker.IsAdbAvailable}" Command="{Binding ToggleAdbLog}" Content="{Binding AdbButtonText}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_ToggleADB_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button IsEnabled="{Binding Locker.IsAdbAvailable}" Command="{Binding CreateDump}">创建Dump</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">
-            创建一段调试用的信息。
-          </TextBlock>
+          <Button IsEnabled="{Binding Locker.IsAdbAvailable}" Command="{Binding CreateDump}" Content="{x:Static res:Strings.Tools_Tool_CreateDump}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_CreateDump_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding QuickFix}" IsEnabled="{Binding Locker.IsFree}">快速修复</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">清除缓存的数据：如果出现了问题可以试试这个</TextBlock>
+          <Button Command="{Binding QuickFix}" IsEnabled="{Binding Locker.IsFree}" Content="{x:Static res:Strings.Tools_Tool_QuickFix}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_QuickFix_Description}"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding RepatchApp}" IsEnabled="{Binding Locker.IsFree}">重新打补丁</Button>
-          <TextBlock VerticalAlignment="Center" FontSize="12">通过给应用重新打补丁来更换Mod注入器</TextBlock>
+          <Button Command="{Binding RepatchApp}" IsEnabled="{Binding Locker.IsFree}" Content="{x:Static res:Strings.Tools_Tool_RepatchApp}"/>
+          <TextBlock VerticalAlignment="Center" FontSize="12" Text="{x:Static res:Strings.Tools_Tool_RepatchApp_Description}"/>
         </StackPanel>
       </StackPanel>
       <StackPanel  Margin="0 20 0 0" Spacing="10">
         <StackPanel Orientation="Horizontal" Spacing="20">
-          <TextBlock FontSize="20">设置</TextBlock>
-          <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light">QuestPatcher设置</TextBlock>
+          <TextBlock FontSize="20" Text="{x:Static res:Strings.Tools_Section_Options}"/>
+          <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light" Text="{x:Static res:Strings.Tools_Section_Options_Description}"/>
         </StackPanel> 
+        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="False">
+          <TextBlock VerticalAlignment="Center" FontSize="15" Text="{x:Static res:Strings.Tools_Option_Language}"/>
+          <ComboBox SelectedIndex="{Binding SelectedLanguage}" IsEnabled="{Binding Locker.IsFree}">
+            <ComboBoxItem Content="{x:Static res:Strings.Tools_Option_Language_Default}"/>
+            <ComboBoxItem Content="English"/> 
+            <ComboBoxItem Content="简体中文"/>
+          </ComboBox>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="10">
           <ToggleButton IsChecked="{Binding Config.UseMirrorDownload}" IsEnabled="False">使用国内镜像</ToggleButton>
           <TextBlock VerticalAlignment="Center" FontSize="12">
@@ -77,11 +85,11 @@
       </StackPanel>
         <StackPanel Margin="0 20 0 0" Spacing="10">
             <StackPanel Orientation="Horizontal" Spacing="20">
-                <TextBlock FontSize="20">主题</TextBlock>
-                <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light">自定义UI</TextBlock>
+                <TextBlock FontSize="20" Text="{x:Static res:Strings.Tools_Option_Theme}"/>
+                <TextBlock FontSize="10" VerticalAlignment="Bottom" FontWeight="Light" Text="{x:Static res:Strings.Tools_Option_Theme_Description}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="18">
-                <TextBlock FontSize="15" VerticalAlignment="Center">选择主题:</TextBlock>
+                <TextBlock FontSize="15" VerticalAlignment="Center" Text="{x:Static res:Strings.Tools_Option_Theme_SelectTheme}"/>
                 <ComboBox ItemsSource="{Binding ThemeManager.AvailableThemes}" MinWidth="150" SelectedItem="{Binding ThemeManager.SelectedTheme}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
@@ -91,7 +99,7 @@
                 </ComboBox>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Command="{Binding OpenThemesFolder}">打开主题文件夹</Button>
+                <Button Command="{Binding OpenThemesFolder}" Content="{x:Static res:Strings.Tools_Option_Theme_OpenThemeFolder}"/>
             </StackPanel>
         </StackPanel>
     </StackPanel>
