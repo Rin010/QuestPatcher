@@ -243,10 +243,17 @@ namespace QuestPatcher.Core.Downgrading
             string uri = $"{DiffUrlBase}{fileDiff.DiffName}";
             _ = await _filesDownloader.DownloadUri(uri, diffPath);
             // check diff file crc
-            if (!await HashUtil.CheckCrc32Async(diffPath, _assetCrc32[fileDiff.DiffName]))
+            if (_assetCrc32.TryGetValue(fileDiff.DiffName, out uint diffCrc))
             {
-                Log.Error("Diff file {DiffName} has incorrect CRC", fileDiff.DiffName);
-                throw new DowngradeException("Diff file is corrupted");
+                if (!await HashUtil.CheckCrc32Async(diffPath, diffCrc))
+                {
+                    Log.Error("Diff file {DiffName} has incorrect CRC", fileDiff.DiffName);
+                    throw new DowngradeException("Diff file is corrupted");
+                }   
+            }
+            else
+            {
+                Log.Warning("CRC for diff file {DiffName} is unknown, will proceed regardless", fileDiff.DiffName);
             }
 
             await FilePatcher.PatchFileAsync(sourcePath, outputPath, diffPath);
